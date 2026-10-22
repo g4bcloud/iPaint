@@ -1,0 +1,33 @@
+name: CI
+
+# Checks every pull request, so a contribution is known to build and pass
+# before it can reach main and trigger a release.
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Show toolchain
+        run: swift --version
+
+      - name: Build
+        run: swift build
+
+      - name: Run checks
+        run: ./scripts/run-tests.sh
+
+      - name: Build the app bundle
+        run: ./scripts/build-app.sh
+
+      - name: Upload the build for testing
+        uses: actions/upload-artifact@v4
+        with:
+          name: iPaint-pr-${{ github.event.pull_request.number || github.run_number }}
+          path: iPaint.app
+          retention-days: 7

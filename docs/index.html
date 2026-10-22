@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>iPaint — Microsoft Paint, at home on your Mac</title>
+<meta name="description" content="A native macOS recreation of Windows 11 Paint. Free, open source, no dependencies.">
+<link rel="icon" href="icon.png">
+
+<meta property="og:title" content="iPaint — Microsoft Paint, at home on your Mac">
+<meta property="og:description" content="A native macOS recreation of Windows 11 Paint. Free, open source, no dependencies.">
+<meta property="og:image" content="icon.png">
+<meta property="og:type" content="website">
+
+<style>
+  :root {
+    --bg: #ffffff;
+    --bg-soft: #f5f5f7;
+    --card: #ffffff;
+    --text: #1d1d1f;
+    --text-dim: #6e6e73;
+    --rule: rgba(0, 0, 0, 0.08);
+    --accent: #0071e3;
+    --shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+    --shadow-lg: 0 18px 50px rgba(0, 0, 0, 0.12);
+    --nav-bg: rgba(255, 255, 255, 0.72);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #000000;
+      --bg-soft: #0f0f11;
+      --card: #16161a;
+      --text: #f5f5f7;
+      --text-dim: #98989d;
+      --rule: rgba(255, 255, 255, 0.1);
+      --accent: #2997ff;
+      --shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+      --shadow-lg: 0 18px 50px rgba(0, 0, 0, 0.6);
+      --nav-bg: rgba(0, 0, 0, 0.66);
+    }
+  }
+
+  * { box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text",
+                 "Helvetica Neue", Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  .wrap { max-width: 980px; margin: 0 auto; padding: 0 24px; }
+
+  /* ---------- nav ---------- */
+  nav {
+    position: sticky; top: 0; z-index: 50;
+    background: var(--nav-bg);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    backdrop-filter: saturate(180%) blur(20px);
+    border-bottom: 1px solid var(--rule);
+  }
+  nav .wrap {
+    display: flex; align-items: center; gap: 18px;
+    height: 52px;
+  }
+  nav img { width: 24px; height: 24px; border-radius: 6px; }
+  nav .name { font-weight: 600; font-size: 15px; letter-spacing: -0.01em; }
+  nav .links { margin-left: auto; display: flex; gap: 24px; }
+  nav a {
+    color: var(--text-dim); text-decoration: none; font-size: 13px;
+    transition: color 0.2s;
+  }
+  nav a:hover { color: var(--text); }
+
+  /* ---------- hero ---------- */
+  header { text-align: center; padding: 88px 0 56px; }
+  header img.app-icon {
+    width: 132px; height: 132px;
+    filter: drop-shadow(0 12px 28px rgba(0, 0, 0, 0.22));
+    margin-bottom: 28px;
+  }
+  h1 {
+    font-size: clamp(40px, 7vw, 68px);
+    line-height: 1.05;
+    letter-spacing: -0.025em;
+    font-weight: 700;
+    margin: 0 0 18px;
+  }
+  .tagline {
+    font-size: clamp(18px, 2.6vw, 23px);
+    color: var(--text-dim);
+    max-width: 620px;
+    margin: 0 auto 36px;
+    letter-spacing: -0.01em;
+  }
+  .cta { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+  .btn {
+    display: inline-block;
+    padding: 12px 26px;
+    border-radius: 980px;
+    font-size: 15px;
+    font-weight: 500;
+    text-decoration: none;
+    transition: transform 0.15s ease, opacity 0.2s ease;
+  }
+  .btn:active { transform: scale(0.97); }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { opacity: 0.88; }
+  .btn-secondary {
+    background: transparent; color: var(--accent);
+    box-shadow: inset 0 0 0 1px currentColor;
+  }
+  .btn-secondary:hover { background: color-mix(in srgb, var(--accent) 8%, transparent); }
+
+  .note { font-size: 13px; color: var(--text-dim); margin-top: 20px; }
+
+  /* ---------- screenshot ---------- */
+  .shot-wrap {
+    max-width: 1100px;
+    margin: 0 auto 84px;
+    padding: 0 24px;
+  }
+  .shot {
+    width: 100%; height: auto; display: block;
+    border-radius: 12px;
+    /* the capture already carries a window shadow in its alpha */
+    filter: drop-shadow(0 22px 60px rgba(0, 0, 0, 0.22));
+  }
+  @media (prefers-color-scheme: dark) {
+    .shot { filter: drop-shadow(0 22px 60px rgba(0, 0, 0, 0.7)); }
+  }
+
+  /* ---------- sections ---------- */
+  section { padding: 72px 0; border-top: 1px solid var(--rule); }
+  section.plain { border-top: none; }
+  h2 {
+    font-size: clamp(27px, 4vw, 38px);
+    letter-spacing: -0.02em;
+    font-weight: 650;
+    margin: 0 0 12px;
+    text-align: center;
+  }
+  .sub {
+    text-align: center; color: var(--text-dim);
+    max-width: 620px; margin: 0 auto 48px; font-size: 17px;
+  }
+
+  /* ---------- feature grid ---------- */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(255px, 1fr));
+    gap: 18px;
+  }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--rule);
+    border-radius: 18px;
+    padding: 26px;
+    box-shadow: var(--shadow);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  .card:hover { transform: translateY(-3px); box-shadow: var(--shadow-lg); }
+  .card .glyph { font-size: 25px; margin-bottom: 14px; display: block; }
+  .card h3 {
+    font-size: 17px; font-weight: 600; margin: 0 0 7px; letter-spacing: -0.01em;
+  }
+  .card p { margin: 0; font-size: 14.5px; color: var(--text-dim); }
+
+  /* ---------- install ---------- */
+  pre {
+    background: var(--bg-soft);
+    border: 1px solid var(--rule);
+    border-radius: 14px;
+    padding: 20px 22px;
+    overflow-x: auto;
+    font-family: "SF Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 13.5px;
+    line-height: 1.7;
+    margin: 0 0 18px;
+  }
+  pre .c { color: var(--text-dim); }
+  .steps { max-width: 700px; margin: 0 auto; }
+  .steps ol { padding-left: 22px; margin: 0; }
+  .steps li { margin-bottom: 14px; font-size: 15.5px; color: var(--text-dim); }
+  .steps li strong { color: var(--text); font-weight: 600; }
+
+  .callout {
+    background: var(--bg-soft);
+    border: 1px solid var(--rule);
+    border-left: 3px solid var(--accent);
+    border-radius: 12px;
+    padding: 16px 20px;
+    font-size: 14.5px;
+    color: var(--text-dim);
+    margin-top: 22px;
+  }
+  .callout strong { color: var(--text); }
+
+  /* ---------- story ---------- */
+  .story {
+    max-width: 660px; margin: 0 auto; font-size: 17.5px;
+    color: var(--text-dim); letter-spacing: -0.005em;
+  }
+  .story p { margin: 0 0 18px; }
+  .story em { color: var(--text); font-style: normal; font-weight: 500; }
+
+  /* ---------- footer ---------- */
+  footer {
+    border-top: 1px solid var(--rule);
+    padding: 36px 0 52px;
+    text-align: center;
+    font-size: 12.5px;
+    color: var(--text-dim);
+  }
+  footer a { color: var(--text-dim); }
+  footer p { margin: 6px 0; }
+
+  a { color: var(--accent); }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap">
+    <img src="icon.png" alt="">
+    <span class="name">iPaint</span>
+    <div class="links">
+      <a href="#features">Features</a>
+      <a href="#install">Install</a>
+      <a href="#contribute">Contribute</a>
+    </div>
+  </div>
+</nav>
+
+<header class="wrap">
+  <img class="app-icon" src="icon.png" alt="The iPaint app icon: a paintbrush over a white canvas with coloured strokes">
+  <h1>Paint, at home<br>on your Mac.</h1>
+  <p class="tagline">
+    A native recreation of Windows 11 Paint — the same tools, the same habits,
+    the same right-click-for-the-second-colour. Free and open source.
+  </p>
+  <div class="cta">
+    <a class="btn btn-primary" href="#install">Get iPaint</a>
+    <a class="btn btn-secondary" href="https://github.com/g4bcloud/iPaint">View on GitHub</a>
+  </div>
+  <p class="note">Requires macOS 14 or later · Apple silicon and Intel · No dependencies</p>
+</header>
+
+<div class="shot-wrap">
+  <picture>
+    <img class="shot" src="screenshot.png" width="2000" height="1402" loading="eager"
+         alt="The iPaint window: a ribbon with Clipboard, Image, Tools, Brushes, Shapes, Size and Colours groups above a white canvas holding filled shapes and the word iPaint">
+  </picture>
+</div>
+
+<section id="features">
+  <div class="wrap">
+    <h2>Everything you reach for</h2>
+    <p class="sub">
+      Not an approximation. The tools are in the same places, named the same
+      things, and behave the same way.
+    </p>
+    <div class="grid">
+      <div class="card">
+        <span class="glyph">✏️</span>
+        <h3>The full toolbox</h3>
+        <p>Pencil, Fill with colour, Text, Eraser, Colour picker and Magnifier,
+           plus rectangular and free-form selection.</p>
+      </div>
+      <div class="card">
+        <span class="glyph">🖌️</span>
+        <h3>Nine brushes</h3>
+        <p>Brush, calligraphy pen and brush, airbrush, oil, crayon, marker,
+           natural pencil and watercolour — each with its own texture.</p>
+      </div>
+      <div class="card">
+        <span class="glyph">⬡</span>
+        <h3>23 shapes</h3>
+        <p>Every shape from Paint's gallery, with outline and fill styles.
+           Hold Shift for a perfect square or circle.</p>
+      </div>
+      <div class="card">
+        <span class="glyph">🗂️</span>
+        <h3>Layers</h3>
+        <p>Keep labels on their own layer and move or hide them without
+           touching the drawing underneath. Reorder, set opacity, merge, flatten.</p>
+      </div>
+      <div class="card">
+        <span class="glyph">🎨</span>
+        <h3>The palette you know</h3>
+        <p>Paint's exact 20 default colours, named on hover, with Colour 1 and
+           Colour 2 on the left and right mouse buttons.</p>
+      </div>
+      <div class="card">
+        <span class="glyph">🔤</span>
+        <h3>Text you can place</h3>
+        <p>Drag the box where you want it and watch the font, size and colour
+           change as you type, before you commit to it.</p>
+      </div>
+      <div class="card">
+        <span class="glyph">💬</span>
+        <h3>Hover help everywhere</h3>
+        <p>Every control explains itself in plain language — written for someone
+           new to the Mac, not for a developer.</p>
+      </div>
+      <div class="card">
+        <span class="glyph">🔍</span>
+        <h3>Pinch to zoom</h3>
+        <p>Smooth trackpad zoom anchored under your fingers, two-finger
+           double-tap to fit, 12.5% to 800%.</p>
+      </div>
+      <div class="card">
+        <span class="glyph">📐</span>
+        <h3>Canvas presets</h3>
+        <p>HD, 2K, 4K, and A4 or Letter at 150 dpi for worksheets and handouts.
+           Or type any size you like.</p>
+      </div>
+      <div class="card">
+        <span class="glyph">💾</span>
+        <h3>Ordinary files</h3>
+        <p>Opens and saves PNG, JPEG, BMP, GIF and TIFF. No library, no
+           accounts, no sync — just files.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>Why this exists</h2>
+    <div class="story">
+      <p>
+        It began as a Christmas present. A primary-school teacher had spent years
+        building her lessons around Microsoft Paint — quick diagrams, labelled
+        worksheets, cropped photos — then switched to a Mac and found that
+        <em>nothing worked the way she expected</em>.
+      </p>
+      <p>
+        The Mac has no shortage of drawing apps. What it lacked was the one she
+        already knew. So iPaint copies Paint's behaviour rather than reinventing
+        it: muscle memory is the whole feature.
+      </p>
+      <p>
+        It turns out a lot of people are in the same position. If you are one of
+        them, it is yours.
+      </p>
+    </div>
+  </div>
+</section>
+
+<section id="install">
+  <div class="wrap">
+    <h2>Install it</h2>
+    <p class="sub">
+      Building takes about twelve seconds and needs nothing but Apple's own
+      developer tools.
+    </p>
+    <div class="steps">
+      <p style="font-size:15px;color:var(--text-dim);margin:0 0 18px">
+        Prefer not to build it? Grab the latest ready-made app from the
+        <a href="https://github.com/g4bcloud/iPaint/releases">Releases page</a>.
+        Or build it yourself:
+      </p>
+      <pre><span class="c"># 1. Get Apple's command line tools (skip if you have Xcode)</span>
+xcode-select --install
+
+<span class="c"># 2. Clone and build</span>
+git clone https://github.com/g4bcloud/iPaint.git
+cd iPaint
+./scripts/build-app.sh
+
+<span class="c"># 3. Install it like any other app</span>
+cp -R iPaint.app /Applications/</pre>
+      <p class="steps-note" style="font-size:15px;color:var(--text-dim);margin:0 0 8px">
+        Then open iPaint from Launchpad or Spotlight.
+      </p>
+      <div class="callout">
+        <strong>On first launch</strong>, macOS will warn that the app is from an
+        unidentified developer — the build is signed on your own machine rather
+        than notarised by Apple. Right-click iPaint in Finder, choose
+        <strong>Open</strong>, and confirm. You only do this once.
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="contribute">
+  <div class="wrap">
+    <h2>Contribute</h2>
+    <p class="sub">
+      Swift, AppKit and SwiftUI, with no third-party dependencies and two test
+      suites you can run in a second.
+    </p>
+    <div class="grid">
+      <div class="card">
+        <span class="glyph">📋</span>
+        <h3>Read <a href="https://github.com/g4bcloud/iPaint/blob/main/AGENTS.md">AGENTS.md</a> first</h3>
+        <p>Architecture, design guidelines, and eight invariants — each one a
+           bug already fixed here, and easy to reintroduce because most fail
+           silently. Written for humans and coding agents alike.</p>
+      </div>
+      <div class="card">
+        <span class="glyph">🧪</span>
+        <h3>Assert on pixels</h3>
+        <p>Checks read the bitmap back and test colours at known coordinates.
+           Run them with <code>./scripts/run-tests.sh</code>.</p>
+      </div>
+      <div class="card">
+        <span class="glyph">🗂️</span>
+        <h3>Where to start</h3>
+        <p>Saving layered files, editable text after placement, and resizable
+           selections are the three most useful things missing.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <p>Made as a gift, shared because others need it too. <a href="https://github.com/g4bcloud/iPaint">Source on GitHub</a></p>
+    <p>
+      iPaint is an independent reimplementation and is not affiliated with,
+      authorised by, or endorsed by Microsoft.
+      Microsoft Paint and Windows are trademarks of Microsoft Corporation.
+    </p>
+  </div>
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,6 @@
+{
+  "enabledMcpjsonServers": [
+    "slack-mcp",
+    "playwright-mcp"
+  ]
+}
