@@ -744,5 +744,45 @@ check("9 brushes available", BrushKind.allCases.count == 9, "got \(BrushKind.all
 check("23 shapes available", ShapeKind.allCases.count == 23, "got \(ShapeKind.allCases.count)")
 check("every brush has an icon", BrushKind.allCases.allSatisfy { !$0.symbol.isEmpty })
 
+// ---------------------------------------------------------- update checker
+print("\nupdate version compare")
+check("newer patch is greater", AppVersion("1.0.4") > AppVersion("1.0.3"))
+check("double-digit patch beats single", AppVersion("1.0.10") > AppVersion("1.0.9"),
+      "numeric, not lexicographic")
+check("minor bump beats patch", AppVersion("1.1.0") > AppVersion("1.0.99"))
+check("equal versions are not greater",
+      !(AppVersion("1.0.3") > AppVersion("1.0.3")) && AppVersion("1.0.3") == AppVersion("1.0.3"))
+check("leading v is ignored", AppVersion("v1.0.3") == AppVersion("1.0.3"))
+check("dev build is older than the same release number",
+      AppVersion("1.0.0-dev") < AppVersion("1.0.0"),
+      "a local dev build must never claim to be up to date against a real 1.0.0")
+check("dev build is still older than a higher release",
+      AppVersion("1.0.0-dev") < AppVersion("1.0.3"))
+check("missing components default to zero", AppVersion("1.0") == AppVersion("1.0.0"))
+
+print("\nrelease JSON parse")
+let sampleJSON: [String: Any] = [
+    "tag_name": "v1.0.4",
+    "html_url": "https://github.com/g4bcloud/iPaint/releases/tag/v1.0.4",
+    "assets": [
+        ["name": "checksum.txt", "browser_download_url": "https://example/checksum.txt"],
+        ["name": "iPaint-1.0.4.zip",
+         "browser_download_url": "https://github.com/g4bcloud/iPaint/releases/download/v1.0.4/iPaint-1.0.4.zip",
+         "digest": "sha256:ABCDEF0123"]
+    ]
+]
+if let rel = LatestRelease(json: sampleJSON) {
+    check("parses the tag", rel.tag == "v1.0.4")
+    check("picks the .zip asset, not checksum.txt", rel.assetName == "iPaint-1.0.4.zip")
+    check("captures the download URL", rel.assetDownloadURL.hasSuffix("iPaint-1.0.4.zip"))
+    check("normalises the digest to lowercase hex without prefix",
+          rel.assetSHA256 == "abcdef0123", "got \(rel.assetSHA256 ?? "nil")")
+    check("version is derived from the tag", rel.version == AppVersion("1.0.4"))
+} else {
+    check("release JSON parses", false, "LatestRelease returned nil")
+}
+check("malformed JSON (no assets) yields nil",
+      LatestRelease(json: ["tag_name": "v1.0.4", "html_url": "x"]) == nil)
+
 print("\n=== \(checks - failures)/\(checks) checks passed ===\n")
 exit(failures == 0 ? 0 : 1)

@@ -16,6 +16,7 @@ ENGINE_SOURCES=(
   Sources/iPaint/Palette.swift
   Sources/iPaint/Presets.swift
   Sources/iPaint/Tooltip.swift
+  Sources/iPaint/UpdateChecker.swift
 )
 
 failed=0

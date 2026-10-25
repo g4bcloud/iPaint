@@ -87,10 +87,17 @@ struct IPaintApp: App {
 }
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
+    private var updateChecker: UpdateChecker?
+
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { true }
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.regular)
         NSApp.activate(ignoringOtherApps: true)
+        // Built here (not as a stored-property initializer) so its @MainActor
+        // init runs in the main-actor context AppKit calls this on.
+        let checker = UpdateChecker()
+        updateChecker = checker
+        checker.checkOnLaunch()
     }
 }
 
